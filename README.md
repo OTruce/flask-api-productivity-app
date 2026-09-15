@@ -2,83 +2,50 @@
 
 A secure, session-authenticated Flask REST API for a personal workout-tracking
 app. Each user can sign up, log in, and manage their own list of workouts —
-create, view (paginated), update, and delete entries. Users can never see or
+create, view, update and delete entries. Users can never see or
 modify another user's workouts.
 
-Built for the "Full Auth Flask Backend" summative lab. The frontend (JWT and
-session client versions) is provided separately; this repo is the backend
-only, built to support the **session-based** client.
 
 **Live API:** `https://flask-api-productivity-app.onrender.com`
-_(Also add this same link to the "Website" field of this repo's GitHub "About" section — see [Deployment](#deployment) below.)_
 
-## Tech Stack
+## Try it in a browser (optional frontend)
 
-- Flask + Flask-RESTful — routing / REST resources
-- Flask-SQLAlchemy — ORM / models
-- Flask-Migrate (Alembic) — database migrations
-- Flask-Bcrypt — password hashing
-- Flask-CORS — cross-origin session cookies for the separate frontend client
-- Faker — seed data generation
-- SQLite (dev) / PostgreSQL (production, e.g. on Render) — `config.py` picks
-  whichever `DATABASE_URL`/`DATABASE_URI` env var is set, falling back to a
-  local SQLite file
-- Gunicorn — production WSGI server (used when deployed)
+A small, plain HTML/JS page is bundled at `static/index.html` and served
+directly at the root URL — no build step, no separate setup. It's the
+easiest way to actually use the API: sign up or log in, then add, edit,
+delete and page through your workouts, all from the browser.
 
-## Project Structure
-
-```
-flask-workout-api/
-├── app.py              # Flask app + all RESTful resources/routes + serves the bonus frontend
-├── config.py           # App config, extension instances (db, bcrypt, migrate, api, CORS)
-├── models.py           # User and Workout SQLAlchemy models
-├── seed.py             # Seeds the database with fake users + workouts
-├── static/
-│   └── index.html       # Optional, ungraded bonus frontend (plain HTML/CSS/JS)
-├── Pipfile              # Dependencies (local dev, via pipenv)
-├── requirements.txt      # Same dependencies, pip-installable (used by Render's build)
-├── Procfile              # Tells the host how to start the server (gunicorn)
-├── render.yaml           # Render Blueprint — optional one-click infra-as-code deploy
-├── migrations/          # Flask-Migrate/Alembic migration history
-└── README.md
-```
+Just open `http://localhost:5555/` locally after running it in the terminal, or prefarably the live Render URL provided above. The frontend is optional but is there so you don't have to test everything with curl or Postman, making interaction with the system a whole lot easier.
 
 ## Installation
 
 1. Clone this repo and `cd` into it.
+   ```bash
+   git clone https://github.com/OTruce/flask-api-productivity-app
+   ```
 2. Install dependencies:
    ```bash
    pipenv install
    pipenv shell
    ```
-3. Set up the database:
+3. Set up the local database:       # Note: Locally it uses different data compared to what the system uses while launched with Render
    ```bash
-   export FLASK_APP=app.py  
+   export FLASK_APP=app.py     
    flask db upgrade
    ```
-   (The `migrations/` folder is already included, so `flask db upgrade` alone
-   will create `app.db` with the correct schema. If you ever need to
-   regenerate migrations from scratch, delete `migrations/` and `app.db`,
-   then run `flask db init && flask db migrate -m "Initial migration" && flask db upgrade`.)
+
 4. Seed the database with sample users and workouts:
    ```bash
    python seed.py
    ```
-   This prints a sample username you can use to log in (password for every
+   This prints a sample username you can log in with (password for every
    seeded user is `password123`).
 
-## Running the Server
-
-```bash
-python app.py
-```
-
-The API runs at `http://localhost:5555`.
-
-If you're running the provided session-based frontend client on a different
-port (e.g. `http://localhost:3000`), make sure requests from the client are
-sent with `credentials: "include"` so the session cookie is stored/sent
-correctly. The allowed CORS origins are configured in `config.py`.
+5. Running the Server
+   ```bash
+   python app.py
+   ```
+The API and the bundled frontend runs at `http://localhost:5555` instead of giving a JSON message.
 
 ## Authentication
 
@@ -120,99 +87,31 @@ workout you don't own returns `403 { "error": "Not authorized" }`.
 }
 ```
 
-## Data Models
-
-**User**
-- `id`
-- `username` (unique, required)
-- `password_hash` (write-only; hashed with bcrypt, never exposed via `to_dict`)
-
-**Workout** (belongs to a `User`)
-- `id`
-- `title` (required)
-- `description`
-- `duration_minutes` (required, must be a positive integer)
-- `date_logged` (defaults to today)
-- `user_id` (foreign key to `User`)
-
-## Bonus: Bundled Frontend (optional, ungraded)
-
-Per the lab instructions ("you can develop the frontend further ... but you
-will only be graded on your backend Flask API"), there's a small, plain
-HTML/CSS/JS page at `static/index.html` that Flask serves directly at `/`.
-It's not a framework app — no build step, no npm install — just one
-self-contained file that talks to this same Flask app's endpoints (login,
-signup, logout, and full workout CRUD with pagination), so it works
-identically locally and on Render with no extra CORS setup, since it's
-served from the same origin as the API.
-
-Once the server is running (locally or on Render), just open the root URL
-in a browser — `http://localhost:5555/` locally, or your Render URL — and
-you'll get a login/signup screen followed by a workout list you can add to,
-edit, delete, and page through.
-
-This is separate from, and does not replace, the dedicated JWT/session
-frontend client provided with the lab — use that one if you need the
-full-featured reference client.
-
 ## Deployment
 
-This API is set up to deploy on [Render](https://render.com) using its free
-web service + free PostgreSQL plans. (SQLite is dev-only — Render's
-filesystem isn't persistent between deploys, so production uses Postgres via
-`DATABASE_URL`, which `config.py` already reads automatically.)
+This API is set up to deploy on Render using its free
+web service and free PostgreSQL plans. 
 
-### Option A — Blueprint (one click)
+### Setup For Firsttime
+To deploy the project manually so that you can run it via the Render link that it provides:
 
-1. Push this repo to GitHub.
-2. In the Render dashboard, click **New > Blueprint**, and point it at your
-   repo. Render will read `render.yaml` and provision both the web service
-   and the Postgres database automatically, wiring `DATABASE_URL` and a
-   random `SECRET_KEY` for you.
-3. Once it deploys, open **Environment** on the web service and set
-   `CORS_ORIGINS` to your deployed frontend's URL (comma-separate multiple
-   origins if needed).
-
-### Option B — Manual setup
-
-1. **Create the database:** Render dashboard → **New > PostgreSQL** → note
-   the generated "Internal Database URL".
+1. **Create the database:** Render dashboard → **New > PostgreSQL** → copy
+   the generated "Internal Database URL" and paste somewhere on a notepad.
 2. **Create the web service:** **New > Web Service** → connect this GitHub
-   repo, then set:
+   repo or your own after cloning, then set:
    - **Build Command:** `pip install -r requirements.txt && flask db upgrade`
    - **Start Command:** `gunicorn app:app`
    - **Environment variables:**
      - `FLASK_APP` = `app.py`
      - `DATABASE_URL` = *(the Internal Database URL from step 1)*
-     - `SECRET_KEY` = *(any long random string)*
-     - `CORS_ORIGINS` = *(your deployed frontend's URL, e.g. `https://your-frontend.vercel.app`)*
      - `PYTHON_VERSION` = `3.11.9`
-3. Deploy. Render will install dependencies, run `flask db upgrade` (applying
-   the migrations already committed in `migrations/`), then start the app
-   with gunicorn.
-4. (Optional) Seed production data once, from the Render Shell tab on the
-   web service: `python seed.py`.
+3. Deploy. Render installs dependencies, runs `flask db upgrade`, then starts the app.
+4. (Optional) Seed sample data once, from the Render Shell tab on the web
+   service: `python seed.py`.
+5. Once the service is live, you can copy the link Render assigns to the service and access the system via the link in a different tab
+   Also note that Render puts the service to sleep after 15 min of inactivity, and awakes it once it gets an attempt to start it which takes 20 to 40 seconds.
 
-### After deploying
-
-1. Copy the live URL Render gives your service (e.g.
-   `https://workout-log-api.onrender.com`).
-2. Paste it into this README where indicated above.
-3. Also add it to the repo's GitHub **About** panel: on the repo's main page,
-   click the ⚙️ gear icon next to "About" → paste the URL into the
-   **Website** field → **Save changes**. This is what makes the live link
-   show up on the repository's information page, per the submission
-   requirements.
-4. Commit and push the README update.
-
-### Notes on cross-origin sessions
-
-Because the frontend and backend are typically deployed to two different
-domains, `config.py` automatically switches cookies to
-`SESSION_COOKIE_SAMESITE=None` and `SESSION_COOKIE_SECURE=True` when running
-on Render (or when `FLASK_ENV=production`), so the session cookie is
-correctly sent/stored across origins over HTTPS. Locally, cookies stay
-`SameSite=Lax` / non-Secure so everything still works over plain `http`.
+##NOTE: Be sure to select the free tiers when creating the database and web services on Render just for testing purposes
 
 ## Status Codes Used
 
@@ -222,4 +121,7 @@ correctly sent/stored across origins over HTTPS. Locally, cookies stay
 - `401` Unauthorized (not logged in)
 - `403` Forbidden (logged in, but doesn't own the resource)
 - `404` Not Found
-- `422` Unprocessable Entity (validation errors, e.g. duplicate username, bad duration)
+- `422` Unprocessable Entity (validation errors)
+
+### Author
+Stephen Njenga
