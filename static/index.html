@@ -226,7 +226,7 @@
   const PER_PAGE = 5;
   let state = { user: null, page: 1, totalPages: 1, workouts: [], editingId: null };
 
-  // ---- tiny fetch helper -------------------------------------------------
+  //tiny fetch helper
   async function api(path, options = {}) {
     const res = await fetch(path, {
       credentials: "include",
@@ -238,7 +238,7 @@
     return { ok: res.ok, status: res.status, body };
   }
 
-  // ---- element refs -------------------------------------------------------
+  //element refs
   const authScreen = document.getElementById("auth-screen");
   const appScreen = document.getElementById("app-screen");
   const userChip = document.getElementById("user-chip");
@@ -258,7 +258,7 @@
   const prevBtn = document.getElementById("prev-btn");
   const nextBtn = document.getElementById("next-btn");
 
-  // ---- auth tab switching ---------------------------------------------
+  //auth tab switching
   tabLogin.addEventListener("click", () => {
     tabLogin.classList.add("active");
     tabSignup.classList.remove("active");
@@ -274,7 +274,7 @@
     authError.textContent = "";
   });
 
-  // ---- screen switching ---------------------------------------------
+  //screen switching
   function showApp(user) {
     state.user = user;
     userName.textContent = user.username;
@@ -291,7 +291,7 @@
     authScreen.classList.remove("hidden");
   }
 
-  // ---- auth actions ---------------------------------------------
+  //auth actions
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     authError.textContent = "";
@@ -325,7 +325,7 @@
     showAuth();
   });
 
-  // ---- workouts: load + render ---------------------------------------------
+  // workouts: load + render
   async function loadWorkouts(page) {
     const { ok, status, body } = await api(`/workouts?page=${page}&per_page=${PER_PAGE}`);
     if (status === 401) { showAuth(); return; }
@@ -424,7 +424,7 @@
   prevBtn.addEventListener("click", () => { if (state.page > 1) loadWorkouts(state.page - 1); });
   nextBtn.addEventListener("click", () => { if (state.page < state.totalPages) loadWorkouts(state.page + 1); });
 
-  // ---- helpers ---------------------------------------------
+  //helpers
   function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, (c) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -432,7 +432,7 @@
   }
   function escapeAttr(str) { return escapeHtml(str); }
 
-  // ---- boot ---------------------------------------------
+  //boot
   (async function init() {
     const { ok, body } = await api("/me");
     if (ok) showApp(body); else showAuth();

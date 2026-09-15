@@ -9,7 +9,7 @@ Built for the "Full Auth Flask Backend" summative lab. The frontend (JWT and
 session client versions) is provided separately; this repo is the backend
 only, built to support the **session-based** client.
 
-**Live API:** `<PASTE YOUR RENDER URL HERE, e.g. https://workout-log-api.onrender.com>`
+**Live API:** `https://flask-api-productivity-app.onrender.com`
 _(Also add this same link to the "Website" field of this repo's GitHub "About" section — see [Deployment](#deployment) below.)_
 
 ## Tech Stack
@@ -53,7 +53,7 @@ flask-workout-api/
    ```
 3. Set up the database:
    ```bash
-   export FLASK_APP=app.py      # Windows (cmd): set FLASK_APP=app.py
+   export FLASK_APP=app.py  
    flask db upgrade
    ```
    (The `migrations/` folder is already included, so `flask db upgrade` alone

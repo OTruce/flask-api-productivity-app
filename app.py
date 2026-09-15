@@ -6,31 +6,20 @@ from models import User, Workout
 
 
 def current_user():
-    """Return the logged-in User, or None if there isn't one."""
     user_id = session.get("user_id")
     if not user_id:
         return None
     return User.query.get(user_id)
 
 
-# ---------------------------------------------------------------------------
 # Frontend + API info
-# ---------------------------------------------------------------------------
 @app.route("/")
 def serve_frontend():
-    """Serve the small bundled frontend (static/index.html) at the root URL.
-
-    This is an optional, ungraded convenience so you can click through
-    login/signup/CRUD in a browser instead of using curl/Postman. It's
-    plain HTML/JS with no build step, and it talks to this same Flask app
-    (same origin), so no CORS configuration is needed for it to work.
-    """
+    
     return send_from_directory(app.static_folder, "index.html")
 
 
 class ApiInfo(Resource):
-    """Machine-readable summary of available routes. Doubles as a health
-    check endpoint for hosts like Render."""
 
     def get(self):
         return {
@@ -48,9 +37,9 @@ class ApiInfo(Resource):
         }, 200
 
 
-# ---------------------------------------------------------------------------
+
 # Auth resources
-# ---------------------------------------------------------------------------
+
 class Signup(Resource):
     def post(self):
         data = request.get_json() or {}
@@ -106,9 +95,8 @@ class CheckSession(Resource):
         return {"error": "Not authorized"}, 401
 
 
-# ---------------------------------------------------------------------------
 # Workout (resource) CRUD
-# ---------------------------------------------------------------------------
+
 class Workouts(Resource):
     def get(self):
         user = current_user()
@@ -158,11 +146,6 @@ class Workouts(Resource):
 
 class WorkoutByID(Resource):
     def _get_owned_workout(self, id, user):
-        """Look up a workout and confirm the current user owns it.
-
-        Returns (workout, None) on success or (None, (body, status)) if the
-        request should be short-circuited with an error response.
-        """
         workout = Workout.query.get(id)
         if not workout:
             return None, ({"error": "Workout not found"}, 404)
