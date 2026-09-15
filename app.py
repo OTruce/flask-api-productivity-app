@@ -1,13 +1,36 @@
-from flask import make_response, request, session
+from flask import make_response, request, send_from_directory, session
 from flask_restful import Resource
 
 from config import api, app, db
 from models import User, Workout
 
 
-class Index(Resource):
-    """Simple root route so host health checks (and curious visitors) get a
-    real response instead of a 404."""
+def current_user():
+    """Return the logged-in User, or None if there isn't one."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    return User.query.get(user_id)
+
+
+# ---------------------------------------------------------------------------
+# Frontend + API info
+# ---------------------------------------------------------------------------
+@app.route("/")
+def serve_frontend():
+    """Serve the small bundled frontend (static/index.html) at the root URL.
+
+    This is an optional, ungraded convenience so you can click through
+    login/signup/CRUD in a browser instead of using curl/Postman. It's
+    plain HTML/JS with no build step, and it talks to this same Flask app
+    (same origin), so no CORS configuration is needed for it to work.
+    """
+    return send_from_directory(app.static_folder, "index.html")
+
+
+class ApiInfo(Resource):
+    """Machine-readable summary of available routes. Doubles as a health
+    check endpoint for hosts like Render."""
 
     def get(self):
         return {
@@ -23,14 +46,6 @@ class Index(Resource):
                 "DELETE /workouts/<id>",
             ],
         }, 200
-
-
-def current_user():
-    """Return the logged-in User, or None if there isn't one."""
-    user_id = session.get("user_id")
-    if not user_id:
-        return None
-    return User.query.get(user_id)
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +205,7 @@ class WorkoutByID(Resource):
         return make_response("", 204)
 
 
-api.add_resource(Index, "/")
+api.add_resource(ApiInfo, "/api")
 api.add_resource(Signup, "/signup")
 api.add_resource(Login, "/login")
 api.add_resource(Logout, "/logout")

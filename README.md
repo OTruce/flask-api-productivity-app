@@ -29,10 +29,12 @@ _(Also add this same link to the "Website" field of this repo's GitHub "About" s
 
 ```
 flask-workout-api/
-├── app.py              # Flask app + all RESTful resources/routes
+├── app.py              # Flask app + all RESTful resources/routes + serves the bonus frontend
 ├── config.py           # App config, extension instances (db, bcrypt, migrate, api, CORS)
 ├── models.py           # User and Workout SQLAlchemy models
 ├── seed.py             # Seeds the database with fake users + workouts
+├── static/
+│   └── index.html       # Optional, ungraded bonus frontend (plain HTML/CSS/JS)
 ├── Pipfile              # Dependencies (local dev, via pipenv)
 ├── requirements.txt      # Same dependencies, pip-installable (used by Render's build)
 ├── Procfile              # Tells the host how to start the server (gunicorn)
@@ -132,6 +134,26 @@ workout you don't own returns `403 { "error": "Not authorized" }`.
 - `duration_minutes` (required, must be a positive integer)
 - `date_logged` (defaults to today)
 - `user_id` (foreign key to `User`)
+
+## Bonus: Bundled Frontend (optional, ungraded)
+
+Per the lab instructions ("you can develop the frontend further ... but you
+will only be graded on your backend Flask API"), there's a small, plain
+HTML/CSS/JS page at `static/index.html` that Flask serves directly at `/`.
+It's not a framework app — no build step, no npm install — just one
+self-contained file that talks to this same Flask app's endpoints (login,
+signup, logout, and full workout CRUD with pagination), so it works
+identically locally and on Render with no extra CORS setup, since it's
+served from the same origin as the API.
+
+Once the server is running (locally or on Render), just open the root URL
+in a browser — `http://localhost:5555/` locally, or your Render URL — and
+you'll get a login/signup screen followed by a workout list you can add to,
+edit, delete, and page through.
+
+This is separate from, and does not replace, the dedicated JWT/session
+frontend client provided with the lab — use that one if you need the
+full-featured reference client.
 
 ## Deployment
 

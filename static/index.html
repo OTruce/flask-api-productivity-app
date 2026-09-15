@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Workout Log</title>
+<style>
+  :root {
+    --paper: #f5f2ec;
+    --ink: #22262b;
+    --ink-soft: #5b5f57;
+    --line: #dcd6c8;
+    --cinder: #c1512f;
+    --cinder-dark: #a1401f;
+    --moss: #4f6b4c;
+    --card: #fffdf9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  header.top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 14px;
+    margin-bottom: 28px;
+  }
+
+  header.top h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  #user-chip { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-soft); }
+  #user-chip strong { color: var(--ink); }
+
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 4px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.85; }
+  button.ghost { background: transparent; color: var(--ink); }
+  button.danger { background: var(--cinder); border-color: var(--cinder); color: #fff; }
+  button.danger:hover { background: var(--cinder-dark); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  input, textarea {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--ink);
+    width: 100%;
+  }
+  input:focus, textarea:focus, button:focus {
+    outline: 2px solid var(--moss);
+    outline-offset: 1px;
+  }
+
+  label { font-size: 12px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
+
+  /* ---- Auth screen ---- */
+  #auth-screen { max-width: 340px; margin: 60px auto 0; text-align: center; }
+  #auth-screen p.tag { color: var(--ink-soft); margin-top: 4px; margin-bottom: 28px; }
+
+  .tabs { display: flex; border: 1px solid var(--ink); border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
+  .tabs button { flex: 1; border: none; border-radius: 0; background: transparent; color: var(--ink); }
+  .tabs button.active { background: var(--ink); color: var(--paper); }
+
+  form.stack { display: flex; flex-direction: column; gap: 14px; text-align: left; }
+  form.stack button[type="submit"] { margin-top: 4px; }
+
+  .error { color: var(--cinder-dark); font-size: 13px; margin-top: 12px; min-height: 18px; }
+
+  /* ---- App screen ---- */
+  section.card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 18px;
+    margin-bottom: 24px;
+  }
+  section.card h2 { font-size: 14px; margin: 0 0 14px; color: var(--ink-soft); font-weight: 600; }
+
+  .add-row { display: grid; grid-template-columns: 1.3fr 0.7fr 1.6fr auto; gap: 10px; align-items: end; }
+  @media (max-width: 560px) { .add-row { grid-template-columns: 1fr; } }
+
+  ul#workout-list { list-style: none; margin: 0; padding: 0; }
+  ul#workout-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  ul#workout-list li:last-child { border-bottom: none; }
+
+  .w-main { min-width: 0; }
+  .w-title { font-weight: 700; }
+  .w-meta { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  .w-desc { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  .w-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .w-actions button { padding: 6px 10px; font-size: 13px; }
+
+  .edit-row { display: grid; grid-template-columns: 1.3fr 0.7fr 1.6fr; gap: 10px; width: 100%; }
+
+  .empty { color: var(--ink-soft); font-size: 14px; padding: 8px 0 4px; }
+
+  .pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 6px; }
+  .pager span { font-size: 13px; color: var(--ink-soft); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="top">
+    <h1>Workout Log</h1>
+    <div id="user-chip" class="hidden">
+      <span>Logged in as <strong id="user-name"></strong></span>
+      <button class="ghost" id="logout-btn">Log out</button>
+    </div>
+  </header>
+
+  <!-- Auth screen -->
+  <div id="auth-screen">
+    <p class="tag">Track it. Own it. Repeat.</p>
+    <div class="tabs">
+      <button id="tab-login" class="active">Log in</button>
+      <button id="tab-signup">Sign up</button>
+    </div>
+
+    <form class="stack" id="login-form">
+      <div>
+        <label for="login-username">Username</label>
+        <input id="login-username" name="username" autocomplete="username" required />
+      </div>
+      <div>
+        <label for="login-password">Password</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit">Log in</button>
+    </form>
+
+    <form class="stack hidden" id="signup-form">
+      <div>
+        <label for="signup-username">Username</label>
+        <input id="signup-username" name="username" autocomplete="username" required />
+      </div>
+      <div>
+        <label for="signup-password">Password</label>
+        <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="6" required />
+        <label style="margin-top:4px;">6 characters minimum</label>
+      </div>
+      <button type="submit">Sign up</button>
+    </form>
+
+    <p class="error" id="auth-error"></p>
+  </div>
+
+  <!-- Main app screen -->
+  <div id="app-screen" class="hidden">
+
+    <section class="card">
+      <h2>Log a workout</h2>
+      <form class="add-row" id="add-form">
+        <div>
+          <label for="add-title">Title</label>
+          <input id="add-title" name="title" placeholder="Leg day" required />
+        </div>
+        <div>
+          <label for="add-duration">Minutes</label>
+          <input id="add-duration" name="duration_minutes" type="number" min="1" placeholder="45" required />
+        </div>
+        <div>
+          <label for="add-desc">Notes (optional)</label>
+          <input id="add-desc" name="description" placeholder="Squats, lunges, calf raises" />
+        </div>
+        <button type="submit">Add</button>
+      </form>
+      <p class="error" id="add-error"></p>
+    </section>
+
+    <section class="card">
+      <h2>Your workouts</h2>
+      <ul id="workout-list"></ul>
+      <p class="empty hidden" id="empty-msg">No workouts yet — log your first one above.</p>
+      <div class="pager">
+        <button class="ghost" id="prev-btn">&larr; Prev</button>
+        <span id="page-label">Page 1 of 1</span>
+        <button class="ghost" id="next-btn">Next &rarr;</button>
+      </div>
+    </section>
+
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const PER_PAGE = 5;
+  let state = { user: null, page: 1, totalPages: 1, workouts: [], editingId: null };
+
+  // ---- tiny fetch helper -------------------------------------------------
+  async function api(path, options = {}) {
+    const res = await fetch(path, {
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
+    let body = null;
+    try { body = await res.json(); } catch (e) { /* no body, e.g. 204 */ }
+    return { ok: res.ok, status: res.status, body };
+  }
+
+  // ---- element refs -------------------------------------------------------
+  const authScreen = document.getElementById("auth-screen");
+  const appScreen = document.getElementById("app-screen");
+  const userChip = document.getElementById("user-chip");
+  const userName = document.getElementById("user-name");
+
+  const tabLogin = document.getElementById("tab-login");
+  const tabSignup = document.getElementById("tab-signup");
+  const loginForm = document.getElementById("login-form");
+  const signupForm = document.getElementById("signup-form");
+  const authError = document.getElementById("auth-error");
+
+  const addForm = document.getElementById("add-form");
+  const addError = document.getElementById("add-error");
+  const workoutList = document.getElementById("workout-list");
+  const emptyMsg = document.getElementById("empty-msg");
+  const pageLabel = document.getElementById("page-label");
+  const prevBtn = document.getElementById("prev-btn");
+  const nextBtn = document.getElementById("next-btn");
+
+  // ---- auth tab switching ---------------------------------------------
+  tabLogin.addEventListener("click", () => {
+    tabLogin.classList.add("active");
+    tabSignup.classList.remove("active");
+    loginForm.classList.remove("hidden");
+    signupForm.classList.add("hidden");
+    authError.textContent = "";
+  });
+  tabSignup.addEventListener("click", () => {
+    tabSignup.classList.add("active");
+    tabLogin.classList.remove("active");
+    signupForm.classList.remove("hidden");
+    loginForm.classList.add("hidden");
+    authError.textContent = "";
+  });
+
+  // ---- screen switching ---------------------------------------------
+  function showApp(user) {
+    state.user = user;
+    userName.textContent = user.username;
+    userChip.classList.remove("hidden");
+    authScreen.classList.add("hidden");
+    appScreen.classList.remove("hidden");
+    loadWorkouts(1);
+  }
+
+  function showAuth() {
+    state.user = null;
+    userChip.classList.add("hidden");
+    appScreen.classList.add("hidden");
+    authScreen.classList.remove("hidden");
+  }
+
+  // ---- auth actions ---------------------------------------------
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    authError.textContent = "";
+    const { ok, body } = await api("/login", {
+      method: "POST",
+      body: JSON.stringify({
+        username: loginForm.username.value.trim(),
+        password: loginForm.password.value,
+      }),
+    });
+    if (ok) { loginForm.reset(); showApp(body); }
+    else { authError.textContent = (body && body.error) || "Login failed."; }
+  });
+
+  signupForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    authError.textContent = "";
+    const { ok, body } = await api("/signup", {
+      method: "POST",
+      body: JSON.stringify({
+        username: signupForm.username.value.trim(),
+        password: signupForm.password.value,
+      }),
+    });
+    if (ok) { signupForm.reset(); showApp(body); }
+    else { authError.textContent = (body && body.error) || "Sign up failed."; }
+  });
+
+  document.getElementById("logout-btn").addEventListener("click", async () => {
+    await api("/logout", { method: "DELETE" });
+    showAuth();
+  });
+
+  // ---- workouts: load + render ---------------------------------------------
+  async function loadWorkouts(page) {
+    const { ok, status, body } = await api(`/workouts?page=${page}&per_page=${PER_PAGE}`);
+    if (status === 401) { showAuth(); return; }
+    if (!ok) return;
+
+    state.page = body.page;
+    state.totalPages = Math.max(body.total_pages, 1);
+    state.workouts = body.workouts;
+    state.editingId = null;
+    renderWorkouts();
+  }
+
+  function renderWorkouts() {
+    workoutList.innerHTML = "";
+    emptyMsg.classList.toggle("hidden", state.workouts.length > 0);
+
+    state.workouts.forEach((w) => {
+      const li = document.createElement("li");
+
+      if (state.editingId === w.id) {
+        li.innerHTML = `
+          <div class="edit-row">
+            <input class="e-title" value="${escapeAttr(w.title)}" />
+            <input class="e-duration" type="number" min="1" value="${w.duration_minutes}" />
+            <input class="e-desc" value="${escapeAttr(w.description || "")}" />
+          </div>
+          <div class="w-actions">
+            <button class="save-btn">Save</button>
+            <button class="ghost cancel-btn">Cancel</button>
+          </div>`;
+        li.querySelector(".save-btn").addEventListener("click", () => saveEdit(w.id, li));
+        li.querySelector(".cancel-btn").addEventListener("click", () => { state.editingId = null; renderWorkouts(); });
+      } else {
+        li.innerHTML = `
+          <div class="w-main">
+            <div class="w-title">${escapeHtml(w.title)}</div>
+            <div class="w-meta">${w.duration_minutes} min &middot; ${w.date_logged || ""}</div>
+            ${w.description ? `<div class="w-desc">${escapeHtml(w.description)}</div>` : ""}
+          </div>
+          <div class="w-actions">
+            <button class="ghost edit-btn">Edit</button>
+            <button class="danger delete-btn">Delete</button>
+          </div>`;
+        li.querySelector(".edit-btn").addEventListener("click", () => { state.editingId = w.id; renderWorkouts(); });
+        li.querySelector(".delete-btn").addEventListener("click", () => deleteWorkout(w.id));
+      }
+
+      workoutList.appendChild(li);
+    });
+
+    pageLabel.textContent = `Page ${state.page} of ${state.totalPages}`;
+    prevBtn.disabled = state.page <= 1;
+    nextBtn.disabled = state.page >= state.totalPages;
+  }
+
+  async function saveEdit(id, li) {
+    const title = li.querySelector(".e-title").value.trim();
+    const duration_minutes = Number(li.querySelector(".e-duration").value);
+    const description = li.querySelector(".e-desc").value.trim();
+
+    const { ok, body } = await api(`/workouts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ title, duration_minutes, description }),
+    });
+    if (ok) { loadWorkouts(state.page); }
+    else { alert((body && body.error) || "Couldn't save changes."); }
+  }
+
+  async function deleteWorkout(id) {
+    if (!confirm("Delete this workout?")) return;
+    const { ok, body } = await api(`/workouts/${id}`, { method: "DELETE" });
+    if (ok) {
+      // If we just deleted the last item on a page beyond page 1, step back a page.
+      const nextPage = state.workouts.length === 1 && state.page > 1 ? state.page - 1 : state.page;
+      loadWorkouts(nextPage);
+    } else {
+      alert((body && body.error) || "Couldn't delete workout.");
+    }
+  }
+
+  addForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    addError.textContent = "";
+    const { ok, body } = await api("/workouts", {
+      method: "POST",
+      body: JSON.stringify({
+        title: addForm.title.value.trim(),
+        duration_minutes: Number(addForm.duration_minutes.value),
+        description: addForm.description.value.trim(),
+      }),
+    });
+    if (ok) { addForm.reset(); loadWorkouts(1); }
+    else { addError.textContent = (body && body.error) || "Couldn't add workout."; }
+  });
+
+  prevBtn.addEventListener("click", () => { if (state.page > 1) loadWorkouts(state.page - 1); });
+  nextBtn.addEventListener("click", () => { if (state.page < state.totalPages) loadWorkouts(state.page + 1); });
+
+  // ---- helpers ---------------------------------------------
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+  function escapeAttr(str) { return escapeHtml(str); }
+
+  // ---- boot ---------------------------------------------
+  (async function init() {
+    const { ok, body } = await api("/me");
+    if (ok) showApp(body); else showAuth();
+  })();
+})();
+</script>
+
+</body>
+</html>
